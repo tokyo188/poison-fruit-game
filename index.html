@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poison Fruit</title>
+  <style>
+    :root {
+      --bg-1: #2a1140;
+      --bg-2: #09060f;
+      --card: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 255, 255, 0.18);
+      --text: #f7f3ff;
+      --muted: #c8bddf;
+      --accent: #ff73c8;
+      --poison: #ff4d5e;
+      --safe: #38d989;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(150deg, var(--bg-1), var(--bg-2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .app {
+      width: min(760px, 100%);
+      background: rgba(12, 9, 18, 0.88);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+
+    .sound-btn {
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 11px;
+      cursor: pointer;
+      transition: transform 0.16s ease;
+    }
+
+    .sound-btn:active {
+      transform: scale(0.96);
+    }
+
+    .screen {
+      display: none;
+      animation: fadeIn 260ms ease;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .title {
+      text-align: center;
+      font-size: clamp(1.7rem, 6vw, 2.3rem);
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: #ffe7f6;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.96rem;
+      margin-bottom: 7px;
+    }
+
+    .value {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 13px;
+      padding: 13px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease, opacity 0.16s ease;
+      margin-top: 6px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(120deg, var(--accent), #c867ff);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(120deg, #6477ff, #6b57ff);
+    }
+
+    .btn-neutral {
+      background: linear-gradient(120deg, #5b6374, #474e5d);
+    }
+
+    .phase-title {
+      text-align: center;
+      font-size: clamp(1.12rem, 4.4vw, 1.5rem);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .counter,
+    .message {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 10px;
+      min-height: 24px;
+      color: var(--muted);
+    }
+
+    .message.safe {
+      color: var(--safe);
+    }
+
+    .message.poison {
+      color: var(--poison);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+      gap: 10px;
+      margin: 8px 0 10px;
+    }
+
+    .fruit {
+      min-height: 64px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: clamp(1.7rem, 7vw, 2.2rem);
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.2s ease;
+      touch-action: manipulation;
+    }
+
+    .fruit:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+
+    .fruit:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .fruit.selected {
+      border: 2px solid var(--poison);
+      box-shadow: 0 0 10px rgba(255, 77, 94, 0.5);
+    }
+
+    .fruit.eaten {
+      animation: pop 200ms ease forwards;
+      pointer-events: none;
+    }
+
+    @keyframes pop {
+      from { transform: scale(1); opacity: 1; }
+      to { transform: scale(0.2); opacity: 0; }
+    }
+
+    .status-list {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+
+    .status-row {
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.07);
+      font-weight: 600;
+    }
+
+    .status-row.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(255, 115, 200, 0.4);
+    }
+
+    .status-row.out {
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+
+    .shake {
+      animation: shake 260ms linear;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+      100% { transform: translateX(0); }
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 7, 14, 0.94);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 10;
+    }
+
+    .overlay.active {
+      display: flex;
+    }
+
+    .overlay-card {
+      width: min(420px, 100%);
+      text-align: center;
+    }
+
+    .overlay-title {
+      font-size: clamp(1.2rem, 5vw, 1.9rem);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .overlay-text {
+      color: var(--muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .overlay-actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .app { padding: 12px; }
+      .card { padding: 13px; }
+      .board { grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 8px; }
+      .fruit { min-height: 58px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <div class="topbar">
+      <button class="sound-btn" id="soundBtn" aria-label="Toggle sound">🔊</button>
+    </div>
+
+    <!-- Start Screen -->
+    <section class="screen active" id="startScreen">
+      <h1 class="title">Poison Fruit 🍎</h1>
+      <div class="card">
+        <div class="field">
+          <div class="label">Players <span class="value" id="playersVal">4</span></div>
+          <input id="playersSlider" type="range" min="2" max="10" value="4" />
+        </div>
+        <div class="field">
+          <div class="label">Fruits <span class="value" id="fruitsVal">12</span></div>
+          <input id="fruitsSlider" type="range" min="5" max="25" value="12" />
+        </div>
+        <div class="field">
+          <div class="label">Poison per player <span class="value" id="poisonVal">2</span></div>
+          <input id="poisonSlider" type="range" min="1" max="3" value="2" />
+        </div>
+        <button class="btn btn-primary" id="startBtn">Start Game</button>
+      </div>
+    </section>
+
+    <!-- Poison Setup Screen -->
+    <section class="screen" id="setupScreen">
+      <div class="card">
+        <div class="phase-title" id="setupTitle"></div>
+        <div class="counter" id="setupCounter"></div>
+        <div class="board" id="setupBoard"></div>
+        <button class="btn btn-secondary" id="nextSetupBtn" disabled>Next Player</button>
+      </div>
+    </section>
+
+    <!-- Gameplay Screen -->
+    <section class="screen" id="gameScreen">
+      <div class="card">
+        <div class="phase-title" id="turnTitle"></div>
+        <div class="status-list" id="statusList"></div>
+        <div class="message" id="message">Choose one fruit.</div>
+        <div class="board" id="gameBoard"></div>
+        <button class="btn btn-secondary" id="nextTurnBtn" style="display:none;">Next Turn</button>
+      </div>
+    </section>
+
+    <!-- Pass Overlay -->
+    <div class="overlay" id="passOverlay">
+      <div class="overlay-card card">
+        <div class="overlay-title" id="passTitle">Pass the phone 📱</div>
+        <div class="overlay-text" id="passText"></div>
+        <button class="btn btn-secondary" id="passBtn">I'm Ready</button>
+      </div>
+    </div>
+
+    <!-- Winner Overlay -->
+    <div class="overlay" id="winOverlay">
+      <div class="overlay-card card">
+        <div class="overlay-title" id="winTitle">🏆 Player 1 Wins</div>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
+          <button class="btn btn-neutral" id="backMenuBtn">Back to Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio elements for offline sounds -->
+    <audio id="sfxClick" preload="auto"></audio>
+    <audio id="sfxBite" preload="auto"></audio>
+    <audio id="sfxPoison" preload="auto"></audio>
+    <audio id="sfxWin" preload="auto"></audio>
+  </main>
+
+  <script>
+    // Fruit source used to build any board size from 5 to 25.
+    const FRUIT_POOL = ["🍎", "🍌", "🍇", "🍉", "🍊", "🍓", "🍍", "🥭", "🍒", "🍋", "🫐", "🍑"];
+
+    // Required arrays from spec.
+    let players = [];          // [{ id, name, alive }]
+    let lives = [];            // number[]
+    let fruits = [];           // [{ id, emoji, eaten }]
+    let poisonLocations = [];  // [Set<fruitId>, Set<fruitId>, ...]
+
+    // Extra runtime state.
+    const state = {
+      phase: "start",         // start | setup | game | end
+      setupIndex: 0,
+      currentTurn: 0,
+      selectedPoisons: new Set(),
+      consumedThisTurn: false,
+      revealMode: "setup",    // setup | game
+      soundOn: true,
+      settings: {
+        players: 4,
+        fruits: 12,
+        poison: 2
+      }
+    };
+
+    const el = {
+      app: document.getElementById("app"),
+      startScreen: document.getElementById("startScreen"),
+      setupScreen: document.getElementById("setupScreen"),
+      gameScreen: document.getElementById("gameScreen"),
+      playersSlider: document.getElementById("playersSlider"),
+      fruitsSlider: document.getElementById("fruitsSlider"),
+      poisonSlider: document.getElementById("poisonSlider"),
+      playersVal: document.getElementById("playersVal"),
+      fruitsVal: document.getElementById("fruitsVal"),
+      poisonVal: document.getElementById("poisonVal"),
+      startBtn: document.getElementById("startBtn"),
+      setupTitle: document.getElementById("setupTitle"),
+      setupCounter: document.getElementById("setupCounter"),
+      setupBoard: document.getElementById("setupBoard"),
+      nextSetupBtn: document.getElementById("nextSetupBtn"),
+      turnTitle: document.getElementById("turnTitle"),
+      statusList: document.getElementById("statusList"),
+      message: document.getElementById("message"),
+      gameBoard: document.getElementById("gameBoard"),
+      nextTurnBtn: document.getElementById("nextTurnBtn"),
+      passOverlay: document.getElementById("passOverlay"),
+      passTitle: document.getElementById("passTitle"),
+      passText: document.getElementById("passText"),
+      passBtn: document.getElementById("passBtn"),
+      winOverlay: document.getElementById("winOverlay"),
+      winTitle: document.getElementById("winTitle"),
+      playAgainBtn: document.getElementById("playAgainBtn"),
+      backMenuBtn: document.getElementById("backMenuBtn"),
+      soundBtn: document.getElementById("soundBtn"),
+      sfxClick: document.getElementById("sfxClick"),
+      sfxBite: document.getElementById("sfxBite"),
+      sfxPoison: document.getElementById("sfxPoison"),
+      sfxWin: document.getElementById("sfxWin")
+    };
+
+    // Initial setup.
+    bindEvents();
+    setupAudio();
+    syncSliderValues();
+
+    function bindEvents() {
+      el.playersSlider.addEventListener("input", syncSliderValues);
+      el.fruitsSlider.addEventListener("input", syncSliderValues);
+      el.poisonSlider.addEventListener("input", syncSliderValues);
+
+      el.startBtn.addEventListener("click", () => {
+        playSound("click");
+        startGame();
+      });
+
+      el.nextSetupBtn.addEventListener("click", () => {
+        playSound("click");
+        nextSetupPlayer();
+      });
+
+      el.passBtn.addEventListener("click", () => {
+        playSound("click");
+        revealAfterPass();
+      });
+
+      el.nextTurnBtn.addEventListener("click", () => {
+        playSound("click");
+        nextTurn();
+      });
+
+      el.playAgainBtn.addEventListener("click", () => {
+        playSound("click");
+        el.winOverlay.classList.remove("active");
+        startGame();
+      });
+
+      el.backMenuBtn.addEventListener("click", () => {
+        playSound("click");
+        backToMenu();
+      });
+
+      el.soundBtn.addEventListener("click", () => {
+        state.soundOn = !state.soundOn;
+        el.soundBtn.textContent = state.soundOn ? "🔊" : "🔇";
+      });
+    }
+
+    function syncSliderValues() {
+      el.playersVal.textContent = el.playersSlider.value;
+      el.fruitsVal.textContent = el.fruitsSlider.value;
+      el.poisonVal.textContent = el.poisonSlider.value;
+    }
+
+    function showScreen(name) {
+      el.startScreen.classList.toggle("active", name === "start");
+      el.setupScreen.classList.toggle("active", name === "setup");
+      el.gameScreen.classList.toggle("active", name === "game");
+    }
+
+    // Start full game from settings.
+    function startGame() {
+      state.settings.players = Number(el.playersSlider.value);
+      state.settings.fruits = Number(el.fruitsSlider.value);
+      state.settings.poison = Number(el.poisonSlider.value);
+
+      players = Array.from({ length: state.settings.players }, (_, i) => ({
+        id: i,
+        name: `Player ${i + 1}`,
+        alive: true
+      }));
+
+      lives = Array.from({ length: state.settings.players }, () => state.settings.poison);
+
+      fruits = Array.from({ length: state.settings.fruits }, (_, i) => ({
+        id: i,
+        emoji: FRUIT_POOL[i % FRUIT_POOL.length],
+        eaten: false
+      }));
+
+      poisonLocations = Array.from({ length: state.settings.players }, () => new Set());
+
+      state.phase = "setup";
+      state.setupIndex = 0;
+      state.currentTurn = 0;
+      state.selectedPoisons = new Set();
+      state.consumedThisTurn = false;
+
+      showScreen("setup");
+      showPassOverlayForSetup();
+    }
+
+    // Poison selection for one player.
+    function showPassOverlayForSetup() {
+      const player = players[state.setupIndex];
+      state.revealMode = "setup";
+      el.passTitle.textContent = "Pass the phone 📱";
+      el.passText.textContent = `${player.name}, choose your poison in secret.`;
+      el.passOverlay.classList.add("active");
+    }
+
+    function renderSetupBoard() {
+      const player = players[state.setupIndex];
+      const required = state.settings.poison;
+
+      el.setupTitle.textContent = `${player.name} choose your poison`;
+      el.setupCounter.textContent = `Selected ${state.selectedPoisons.size} / ${required}`;
+      el.nextSetupBtn.disabled = state.selectedPoisons.size !== required;
+
+      el.setupBoard.innerHTML = "";
+
+      fruits.forEach((fruit) => {
+        const btn = document.createElement("button");
+        btn.className = "fruit";
+        btn.textContent = fruit.emoji;
+
+        if (state.selectedPoisons.has(fruit.id)) {
+          btn.classList.add("selected");
+        }
+
+        btn.addEventListener("click", () => {
+          if (state.selectedPoisons.has(fruit.id)) {
+            state.selectedPoisons.delete(fruit.id);
+          } else if (state.selectedPoisons.size < required) {
+            state.selectedPoisons.add(fruit.id);
+          }
+          renderSetupBoard();
+        });
+
+        el.setupBoard.appendChild(btn);
+      });
+    }
+
+    function nextSetupPlayer() {
+      const required = state.settings.poison;
+      if (state.selectedPoisons.size !== required) {
+        return;
+      }
+
+      poisonLocations[state.setupIndex] = new Set(state.selectedPoisons);
+      state.selectedPoisons.clear();
+      state.setupIndex += 1;
+
+      if (state.setupIndex < players.length) {
+        showPassOverlayForSetup();
+        return;
+      }
+
+      state.phase = "game";
+      state.currentTurn = getNextAliveIndex(0);
+      showScreen("game");
+      showPassOverlayForTurn();
+    }
+
+    function revealAfterPass() {
+      el.passOverlay.classList.remove("active");
+      if (state.revealMode === "setup") {
+        renderSetupBoard();
+        return;
+      }
+      renderTurn();
+    }
+
+    // Gameplay turn rendering.
+    function showPassOverlayForTurn() {
+      const player = players[state.currentTurn];
+      state.revealMode = "game";
+      el.passTitle.textContent = "Next turn";
+      el.passText.textContent = `${player.name}, tap to start your turn.`;
+      el.passOverlay.classList.add("active");
+    }
+
+    function renderTurn() {
+      state.consumedThisTurn = false;
+      el.nextTurnBtn.style.display = "none";
+      el.turnTitle.textContent = `${players[state.currentTurn].name}'s Turn`;
+      el.message.className = "message";
+      el.message.textContent = "Choose one fruit.";
+      renderStatus();
+      renderGameBoard();
+    }
+
+    function renderStatus() {
+      el.statusList.innerHTML = "";
+
+      players.forEach((player, index) => {
+        const row = document.createElement("div");
+        row.className = "status-row";
+
+        if (!player.alive) {
+          row.classList.add("out");
+        }
+        if (index === state.currentTurn && player.alive) {
+          row.classList.add("active");
+        }
+
+        const hearts = "❤️".repeat(Math.max(0, lives[index])) || "🖤";
+        row.textContent = `${player.name} ${hearts}`;
+        el.statusList.appendChild(row);
+      });
+    }
+
+    function renderGameBoard() {
+      el.gameBoard.innerHTML = "";
+
+      fruits.filter((fruit) => !fruit.eaten).forEach((fruit) => {
+        const btn = document.createElement("button");
+        btn.className = "fruit";
+        btn.textContent = fruit.emoji;
+        btn.disabled = state.consumedThisTurn;
+        btn.addEventListener("click", () => eatFruit(fruit.id, btn));
+        el.gameBoard.appendChild(btn);
+      });
+    }
+
+    // Main action when current player eats one fruit.
+    function eatFruit(fruitId, button) {
+      if (state.consumedThisTurn || state.phase !== "game") {
+        return;
+      }
+
+      state.consumedThisTurn = true;
+      fruits[fruitId].eaten = true;
+      button.classList.add("eaten");
+
+      const poisoned = isPoisoned(fruitId);
+
+      if (poisoned) {
+        playSound("poison");
+        shakeScreen();
+
+        lives[state.currentTurn] -= 1;
+        el.message.className = "message poison";
+        el.message.textContent = "Poison fruit!";
+
+        if (lives[state.currentTurn] <= 0 && players[state.currentTurn].alive) {
+          players[state.currentTurn].alive = false;
+          el.message.className = "message poison";
+          el.message.textContent = `${players[state.currentTurn].name} eliminated 💀`;
+        }
+      } else {
+        playSound("bite");
+        el.message.className = "message safe";
+        el.message.textContent = "Safe fruit";
+      }
+
+      renderStatus();
+      renderGameBoard();
+
+      const alive = players.filter((p) => p.alive);
+      if (alive.length === 1) {
+        showWinner(alive[0]);
+        return;
+      }
+
+      if (fruits.every((f) => f.eaten)) {
+        // If fruits run out, winner is alive player with most lives.
+        let bestIndex = -1;
+        let bestLives = -1;
+        players.forEach((player, i) => {
+          if (player.alive && lives[i] > bestLives) {
+            bestLives = lives[i];
+            bestIndex = i;
+          }
+        });
+        showWinner(players[bestIndex]);
+        return;
+      }
+
+      el.nextTurnBtn.style.display = "block";
+    }
+
+    function isPoisoned(fruitId) {
+      for (let i = 0; i < poisonLocations.length; i += 1) {
+        if (poisonLocations[i].has(fruitId)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function nextTurn() {
+      state.currentTurn = getNextAliveIndex((state.currentTurn + 1) % players.length);
+      showPassOverlayForTurn();
+    }
+
+    function getNextAliveIndex(start) {
+      for (let offset = 0; offset < players.length; offset += 1) {
+        const index = (start + offset) % players.length;
+        if (players[index].alive) {
+          return index;
+        }
+      }
+      return 0;
+    }
+
+    function showWinner(winner) {
+      state.phase = "end";
+      playSound("win");
+      el.winTitle.textContent = `🏆 ${winner.name} Wins`;
+      el.winOverlay.classList.add("active");
+    }
+
+    function backToMenu() {
+      state.phase = "start";
+      el.winOverlay.classList.remove("active");
+      showScreen("start");
+    }
+
+    function shakeScreen() {
+      el.app.classList.remove("shake");
+      void el.app.offsetWidth;
+      el.app.classList.add("shake");
+    }
+
+    // Sound system with generated offline WAV data.
+    function setupAudio() {
+      el.sfxClick.src = makeTone([
+        { f: 900, d: 40, v: 0.35 },
+        { f: 1200, d: 30, v: 0.22 }
+      ]);
+      el.sfxBite.src = makeTone([
+        { f: 420, d: 90, v: 0.33 },
+        { f: 520, d: 60, v: 0.2 }
+      ]);
+      el.sfxPoison.src = makeTone([
+        { f: 300, d: 100, v: 0.38 },
+        { f: 180, d: 130, v: 0.45 }
+      ]);
+      el.sfxWin.src = makeTone([
+        { f: 523, d: 120, v: 0.35 },
+        { f: 659, d: 120, v: 0.35 },
+        { f: 784, d: 160, v: 0.38 }
+      ]);
+    }
+
+    function playSound(type) {
+      if (!state.soundOn) return;
+      const map = {
+        click: el.sfxClick,
+        bite: el.sfxBite,
+        poison: el.sfxPoison,
+        win: el.sfxWin
+      };
+      const audio = map[type];
+      if (!audio) return;
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    function makeTone(parts) {
+      const sampleRate = 22050;
+      const samples = [];
+
+      parts.forEach((part) => {
+        const count = Math.floor((part.d / 1000) * sampleRate);
+        for (let i = 0; i < count; i += 1) {
+          const t = i / sampleRate;
+          const env = Math.min(1, i / 120) * Math.min(1, (count - i) / 120);
+          const wave = Math.sin(2 * Math.PI * part.f * t) * part.v * env;
+          samples.push(Math.max(-1, Math.min(1, wave)));
+        }
+      });
+
+      const wav = encodeWav(samples, sampleRate);
+      return `data:audio/wav;base64,${toBase64(wav)}`;
+    }
+
+    function encodeWav(samples, sampleRate) {
+      const dataSize = samples.length * 2;
+      const bytes = new Uint8Array(44 + dataSize);
+      let p = 0;
+
+      const writeStr = (str) => {
+        for (let i = 0; i < str.length; i += 1) bytes[p++] = str.charCodeAt(i);
+      };
+      const write16 = (v) => {
+        bytes[p++] = v & 255;
+        bytes[p++] = (v >> 8) & 255;
+      };
+      const write32 = (v) => {
+        bytes[p++] = v & 255;
+        bytes[p++] = (v >> 8) & 255;
+        bytes[p++] = (v >> 16) & 255;
+        bytes[p++] = (v >> 24) & 255;
+      };
+
+      writeStr("RIFF");
+      write32(36 + dataSize);
+      writeStr("WAVE");
+      writeStr("fmt ");
+      write32(16);
+      write16(1);
+      write16(1);
+      write32(sampleRate);
+      write32(sampleRate * 2);
+      write16(2);
+      write16(16);
+      writeStr("data");
+      write32(dataSize);
+
+      samples.forEach((s) => {
+        const n = s < 0 ? s * 32768 : s * 32767;
+        const v = Math.round(n);
+        write16(v & 65535);
+      });
+
+      return bytes;
+    }
+
+    function toBase64(bytes) {
+      let bin = "";
+      for (let i = 0; i < bytes.length; i += 1) {
+        bin += String.fromCharCode(bytes[i]);
+      }
+      return btoa(bin);
+    }
+  </script>
+</body>
+</html>
